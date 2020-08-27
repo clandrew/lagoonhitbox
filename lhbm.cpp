@@ -57,6 +57,11 @@ int main(int argc, void** argv)
 
     char* inputFileName = reinterpret_cast<char*>(argv[1]);
     char* outputFileName = reinterpret_cast<char*>(argv[2]);
+    char* hitbox1Str = reinterpret_cast<char*>(argv[3]);
+    char* hitbox2Str = reinterpret_cast<char*>(argv[4]);
+
+    int ff = atoi(hitbox1Str);
+    int hf = atoi(hitbox2Str);
 
     FILE* pB = nullptr;
     fopen_s(&pB, inputFileName, "rb");
@@ -103,9 +108,6 @@ int main(int argc, void** argv)
     };
 
     // Enlarge hitboxes
-    int ff = 1;
-    int hf = 1;
-
     allDirs[FacingRight].Right *= ff;
     allDirs[FacingRight].Top *= hf;
     allDirs[FacingRight].Bottom *= hf;
@@ -133,6 +135,7 @@ int main(int argc, void** argv)
         PushValue(allDirs[i].Bottom, &hitboxBytes);
     }
 
+    std::cout << "Patching: \n";
     for (int i = 0; i < hitboxBytes.size(); ++i)
     {
         std::cout << std::hex << std::uppercase << ((int)hitboxBytes[i]) << " ";
@@ -167,4 +170,6 @@ int main(int argc, void** argv)
     fwrite(dataB.data(), 1, dataB.size(), pB);
     fclose(pB);
 
+    std::cout << "Done.\n";
+    return 0;
 }
