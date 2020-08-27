@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BinDelta", "BinDelta.vcxproj", "{78AEC63B-05A5-4E88-B29A-1FD924EA4131}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lhbm", "lhbm.vcxproj", "{78AEC63B-05A5-4E88-B29A-1FD924EA4131}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
