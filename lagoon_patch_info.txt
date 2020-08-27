@@ -1,4 +1,4 @@
-This post explains lagoon_hitbox.ips, a proof-of-concept patch created to enlarge the hitboxes in the game Lagoon for SNES. The patch was really quick+and+dirty. Nonetheless it's posted here:
+This post explains Lagoon_hitbox.ips, a proof-of-concept patch created to enlarge the hitboxes in the game Lagoon for SNES. The patch was really quick+and+dirty. Nonetheless it's posted here:
 
 http://secretplace.cml-a.com/edits.php
 
