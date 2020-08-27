@@ -21,7 +21,7 @@ lhbm.exe input.smc output.smc 3 2
 [hitboxMultiplierSides] multiplies the hitbox sizes perpendicular to the direction NASIR is facing. For example, when NASIR is facing right, a multiplier of 2 will move the top and bottom edges of the hit box by a multiple of 2 compared to the default.
 
 ## Technical Document
-Find a document with an explanation of the patcher and the code that it modifies here.
+Find a document with an explanation of the patcher and the code that it modifies [here](https://raw.githubusercontent.com/clandrew/lagoonhitbox/master/lagoon_patch_info.txt).
 
 ## Build
 The code is organized and built as a Visual Studio 2019 solution written in C++. 
