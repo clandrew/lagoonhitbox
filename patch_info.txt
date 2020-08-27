@@ -1,0 +1,277 @@
+This post explains Lagoon_hitbox.ips, a proof-of-concept patch created to enlarge the hitboxes in the game Lagoon for SNES. The patch was really quick+and+dirty. Nonetheless it’s posted here:
+
+http://secretplace.cml-a.com/edits.php
+
+What follows is a description of the patch and how it works.
+
+First, here are some useful memory locations:
+$01:0502-0503 - NASIR's X position in the map
+$01:0504-0505 - NASIR's Y position in the map
+$01:050A- The direction NASIR is facing.
+	- 00 means right
+	- 01 means down
+	- 02 means left
+	- 03 means up
+	
+$01:B710-B717 - The offsets of NASIR's hit box from his position, if he is facing right
+$01:B718-B71F - The offsets of NASIR's hit box from his position, if he is facing down
+$01:B720-B727 - The offsets of NASIR's hit box from his position, if he is facing left
+$01:B728-B730 - The offsets of NASIR's hit box from his position, if he is facing up
+
+In Lagoon, the following code is invoked whenever an action button is pressed, even if you're not near anything.
+
+$01/9BBD AD 0A 05    LDA $050A               ; A = the direction NASIR is facing.
+					     ; 
+$01/9BC0 0A          ASL A                   ; A *= 8
+$01/9BC1 0A          ASL A                   ;
+$01/9BC2 0A          ASL A                   ;
+$01/9BC3 18          CLC                     ;
+$01/9BC4 69 20       ADC #$20                ; A += 0x20
+					     ; 
+					     ; Now A effectively stores an array index with 
+					     ; which to load hitbox offsets.
+					     ; If facing right: A = 0x20
+					     ; If facing down: A = 0x28
+					     ; If facing left: A = 0x30
+					     ; If facing up: A = 0x38
+					     ; 
+$01/9BC6 20 C3 B6    JSR $B6C3	             ; Call CalculatePlayerHitboxDimensions()
+$01/9BC9 60          RTS                     
+
+The function CalculatePlayerHitboxDimensions() looks like the following
+
+CalculatePlayerHitboxDimensions:
+					     ; Preconditions: A is set to one of 
+					     ;     {0x20, 0x28, 0x30, 0x38} depending on
+					     ;     the direction NASIR is facing, as described 
+					     ;     above.
+					     ; Postconditions: $40, $42, $44, and $46 contain 
+					     ;     the dimensions of NASIR's hit box; left, 
+					     ;     right, top and bottom respectively.
+$01/B6C3 C2 20       REP #$20                
+$01/B6C5 A8          TAY                     
+$01/B6C6 AD 02 05    LDA $0502               ; Load NASIR's X position
+$01/B6C9 18          CLC                    
+$01/B6CA 79 F0 B6    ADC $B6F0,y             ; Add left edge hitbox offset to NASIR's X position
+$01/B6CD 85 40       STA $40                 ; Store it as an output
+					     ; 
+$01/B6CF AD 02 05    LDA $0502 		     ; Load NASIR's X position
+$01/B6D2 18          CLC                     
+$01/B6D3 79 F2 B6    ADC $B6F2,y             ; Add right edge hitbox offset to NASIR's X position
+$01/B6D6 85 42       STA $42                 ; Store it as an output
+					     ; 
+$01/B6D8 AD 04 05    LDA $0504               ; Load NASIR's Y position
+$01/B6DB 18          CLC   
+$01/B6DC 79 F4 B6    ADC $B6F4,y             ; Add top edge hitbox offset to NASIR's Y position
+$01/B6DF 85 44       STA $44                 ; Store it as an output
+					     ; 
+$01/B6E1 AD 04 05    LDA $0504               ; Load NASIR's Y position
+$01/B6E4 18          CLC                     
+$01/B6E5 79 F6 B6    ADC $B6F6,y             ; Add bottom edge hitbox offset to NASIR's Y position
+$01/B6E8 85 46       STA $46                 ; Store it as an output
+					     ; 
+$01/B6EA 29 FF 00    AND #$00FF              ; Clean up and return
+$01/B6ED E2 20       SEP #$20                
+$01/B6EF 60          RTS                    
+
+If you were to skim the code quickly you'd see it loads hitbox dimensions from memory. From that, you might get the impression they are something dynamic. 
+But, they come from a table hard-coded in ROM data. (In fact, you can see this based on the particular address they're loaded from).
+
+Just so you know, the hitbox table data contains this (Semantics are left, right, top, bottom)-
+
+Facing  	Raw data			Plain hex offsets		Signed dec offsets	
+------		--------			-----------------		------------------
+Right		00 00 19 00 F8 FF 08 00		0h, 19h, FFF8h, 8h		0, 25, -8, 8		
+Down		F0 FF 10 00 00 00 0F 00		FFF0h, 10h, 0h, 0Fh		-16, 16, 0, 15	
+Left		E7 FF 00 00 F8 FF 08 00		FFE7h, 0h, FFF8h, 8h		-25, 0, -8, 8
+Up		F0 FF 10 00 F1 FF 00 00		FFF0h, 10h, FFF1h, 0h		-16, 16, -15, 0	
+
+Yes, the game uses slightly differently-sized hitboxes depending on the direction you're facing.
+
+Now, the patch. What this patch does is instead of offsetting NASIR's position by values from this table, it hacks it to offset the position simply by a hardcoded number.
+The hardcoded numbers yield bigger hitboxes than the offsets from the table.
+
+It always applies the hitbox of offsets {-0x30, 0x32, -0x38, 0x30 } = {-48, 50, -56, 48 }. The hitbox size is 98×104 which is about 5 times bigger than the default.
+
+The patch modifies just four operations in CalculatePlayerHitboxDimensions:
+
+CalculatePlayerHitboxDimensions:
+					     ; Preconditions: A is set to one of {0x20, 0x28, 0x30, 0x38} depending on
+					     ;     the direction NASIR is facing, as described above.
+					     ; Postconditions: $40, $42, $44, and $46 contain the dimensions of 
+					     ;     NASIR's hit box; left, right, top and bottom respectively.
+$01/B6C3 C2 20       REP #$20                
+$01/B6C5 A8          TAY                     
+$01/B6C6 AD 02 05    LDA $0502               ; Load NASIR's X position
+$01/B6C9 18          CLC                    
+$01/B6CA E9 30 00    SBC #$0030              ; Apply left edge hitbox offset -30h
+$01/B6CD 85 40       STA $40                 ; Store it as an output
+					     ; 
+$01/B6CF AD 02 05    LDA $0502 		     ; Load NASIR's X position
+$01/B6D2 18          CLC                     
+$01/B6D3 69 32 00    ADC #$0032              ; Apply left edge hitbox offset 32h
+$01/B6D6 85 42       STA $42                 ; Store it as an output
+					     ; 
+$01/B6D8 AD 04 05    LDA $0504               ; Load NASIR's Y position
+$01/B6DB 18          CLC   
+$01/B6DC E9 38 00    SBC #$0038              ; Apply left edge hitbox offset -38h
+$01/B6DF 85 44       STA $44                 ; Store it as an output
+					     ; 
+$01/B6E1 AD 04 05    LDA $0504               ; Load NASIR's Y position
+$01/B6E4 18          CLC                     
+$01/B6E5 69 30 00    ADC #$0030              ; Apply left edge hitbox offset 30h
+$01/B6E8 85 46       STA $46                 ; Store it as an output
+					     ; 
+$01/B6EA 29 FF 00    AND #$00FF              ; Clean up and return
+$01/B6ED E2 20       SEP #$20                
+$01/B6EF 60          RTS     
+
+And there you have it, the code for the proof-of-concept posted at the link above.
+
+----------------------------------------------------------------------------------------------
+
+Here is a small improvement that can be made to the above hack. First, it’d be cleaner to modify the hitbox region offsets in the ROM directly. So let’s do that instead.
+
+To re-iterate, the default values are (with semantics left, right, top, bottom)-
+
+Facing  	Raw data			Plain hex offsets		Signed dec offsets	
+------		--------			-----------------		------------------
+Right		00 00 19 00 F8 FF 08 00		0h, 19h, FFF8h, 8h		0, 25, -8, 8	
+Down		F0 FF 10 00 00 00 0F 00		FFF0h, 10h, 0h, 0Fh		-16, 16, 0, 15	
+Left		E7 FF 00 00 F8 FF 08 00		FFE7h, 0h, FFF8h, 8h		-25, 0, -8, 8	
+Up		F0 FF 10 00 F1 FF 00 00		FFF0h, 10h, FFF1h, 0h		-16, 16, -15, 0	
+
+The ROM file offsets for each direction are
+
+Facing		Headerless ROM file offset
+------		--------------------------
+Right		B710
+Down		B718
+Left		B720
+Up		B728
+
+While we can patch the table manually, it makes for easier testing of changes if you use a patching program.
+
+Here's some C++ code for one:
+
+enum Direction 
+{ 
+    FacingRight = 0, 
+    FacingDown = 1,
+    FacingLeft = 2, 
+    FacingUp = 3 
+};
+
+struct HitboxDir
+{
+    int Left;
+    int Right;
+    int Top;
+    int Bottom;
+};
+
+void PushValue(int b, std::vector<unsigned char>* out)
+{
+    if (b >= 0)
+    {
+        assert(b < 256);
+        out->push_back(b); // little endian
+        out->push_back(0);
+    }
+    else
+    {
+        int u = 0x10000 + b;
+        int low = u & 0xFF;
+        out->push_back(low);
+        u >>= 8;
+        assert(u < 256);
+        int high = u & 0xFF;
+        out->push_back(high);
+    }
+}
+
+int main()
+{
+    FILE* pB = nullptr;
+
+    fopen_s(&pB, "Lagoon.hitbox.v2.smc", "rb");
+
+    // Check size
+    fseek(pB, 0, SEEK_END);
+    long sizeB = ftell(pB);
+    fseek(pB, 0, SEEK_SET);
+
+    std::vector<unsigned char> dataB;
+    dataB.resize(sizeB);
+
+    fread(dataB.data(), 1, sizeB, pB);
+
+    fclose(pB);
+
+    HitboxDir allDirs[] =
+    {
+        {0, 25, -8, 8},
+        {-16, 16, 0, 15},
+        {-25, 0, -8, 8},
+        {-16, 16, -15, 0}
+    };
+
+    // Enlarge hitboxes
+    int ff = 3;
+    int hf = 2;
+
+    allDirs[FacingRight].Right *= ff;
+    allDirs[FacingRight].Top *= hf;
+    allDirs[FacingRight].Bottom *= hf;
+
+    allDirs[FacingDown].Bottom *= ff;
+    allDirs[FacingDown].Left *= hf;
+    allDirs[FacingDown].Right *= hf;
+
+    allDirs[FacingLeft].Left *= ff;
+    allDirs[FacingLeft].Top *= hf;
+    allDirs[FacingLeft].Bottom *= hf;
+
+    allDirs[FacingUp].Top *= ff;
+    allDirs[FacingUp].Left *= hf;
+    allDirs[FacingUp].Right *= hf;
+
+    // Transfer hitbox info into byte data
+    std::vector<unsigned char> hitboxBytes;
+
+    for (int i = 0; i < 4; ++i)
+    {
+        PushValue(allDirs[i].Left, &hitboxBytes);
+        PushValue(allDirs[i].Right, &hitboxBytes);
+        PushValue(allDirs[i].Top, &hitboxBytes);
+        PushValue(allDirs[i].Bottom, &hitboxBytes);
+    }
+
+    // Patch the new tables in
+    int destOffset = 0xB710;
+    for (size_t i = 0; i < hitboxBytes.size(); ++i)
+    {
+        dataB[destOffset + i] = hitboxBytes[i];
+    }
+
+    fopen_s(&pB, "Lagoon.hitbox.v3.smc", "wb");
+    fwrite(dataB.data(), 1, dataB.size(), pB);
+    fclose(pB);
+
+}
+
+Running this patching program yields the table
+
+Facing  	Raw data			Plain hex offsets		Signed dec offsets	
+------		--------			-----------------		------------------
+Right		00 00 4B 00 F0 FF 10 00		0h, 4Bh, FFF0h, 10h		0, 75, -16, 16			
+Down		E0 FF 20 00 00 00 2D 00		FFE0h, 20h, 0, 2Dh		-32, 32, 0, 45	
+Left		B5 FF 00 00 F0 FF 10 00		FFB5h, 0h, FFF0h, 10h		-75, 0, -16, 16			
+Up		E0 FF 20 00 D3 FF 00 00		FFE0h, 20h, FFD3, 0h		-32, 32, -45, 0		
+
+If this concept seems useful then it'd be a good idea to fuss with the tables until they yield something desirable.
+
+Note:
+- All ROM file offsets are on headerless ROMs.
+- The hitboxes calculated from the routine described here is used for both talking to NPCs, and combat. While there might be a motive to affect *only* combat, there've also been complaints that the hitboxes when talking to NPCs are too fussy, so YMMV.
+- If you make the hitboxes obscenely large it can make the game hard to play. For example, if NPCs A and B are standing close to each other, attempting to talk to A might acidentally cause conversation with B.
