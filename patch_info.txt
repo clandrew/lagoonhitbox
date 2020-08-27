@@ -1,4 +1,4 @@
-This post explains Lagoon_hitbox.ips, a proof-of-concept patch created to enlarge the hitboxes in the game Lagoon for SNES. The patch was really quick+and+dirty. Nonetheless it’s posted here:
+This post explains Lagoon_hitbox.ips, a proof-of-concept patch created to enlarge the hitboxes in the game Lagoon for SNES. The patch was really quick+and+dirty. Nonetheless it's posted here:
 
 http://secretplace.cml-a.com/edits.php
 
@@ -91,7 +91,7 @@ Yes, the game uses slightly differently-sized hitboxes depending on the directio
 Now, the patch. What this patch does is instead of offsetting NASIR's position by values from this table, it hacks it to offset the position simply by a hardcoded number.
 The hardcoded numbers yield bigger hitboxes than the offsets from the table.
 
-It always applies the hitbox of offsets {-0x30, 0x32, -0x38, 0x30 } = {-48, 50, -56, 48 }. The hitbox size is 98×104 which is about 5 times bigger than the default.
+It always applies the hitbox of offsets {-0x30, 0x32, -0x38, 0x30 } = {-48, 50, -56, 48 }. The hitbox size is 98x104 which is about 5 times bigger than the default.
 
 The patch modifies just four operations in CalculatePlayerHitboxDimensions:
 
@@ -130,7 +130,7 @@ And there you have it, the code for the proof-of-concept posted at the link abov
 
 ----------------------------------------------------------------------------------------------
 
-Here is a small improvement that can be made to the above hack. First, it’d be cleaner to modify the hitbox region offsets in the ROM directly. So let’s do that instead.
+Here is a small improvement that can be made to the above hack. First, it'd be cleaner to modify the hitbox region offsets in the ROM directly. So let's do that instead.
 
 To re-iterate, the default values are (with semantics left, right, top, bottom)-
 
