@@ -152,7 +152,7 @@ Up		B728
 
 While we can patch the table manually, it makes for easier testing of changes if you use a patching program.
 
-Here's some C++ code for one:
+Here's some quickly-put-together C++ code for one:
 
 enum Direction 
 { 
@@ -269,7 +269,11 @@ Down		E0 FF 20 00 00 00 2D 00		FFE0h, 20h, 0, 2Dh		-32, 32, 0, 45
 Left		B5 FF 00 00 F0 FF 10 00		FFB5h, 0h, FFF0h, 10h		-75, 0, -16, 16			
 Up		E0 FF 20 00 D3 FF 00 00		FFE0h, 20h, FFD3, 0h		-32, 32, -45, 0		
 
-If this concept seems useful then it'd be a good idea to fuss with the tables until they yield something desirable.
+Find a convenient, buildable version of patcher here: https://github.com/clandrew/lagoonhitbox/
+
+You can use the patcher to change the hitboxes as you want.
+
+If this concept seems useful then it'd be a good idea to fuss with the values until they yield something desirable. 
 
 Note:
 - All ROM file offsets are on headerless ROMs.
